@@ -1,10 +1,13 @@
 # auth_service.py
 from flask import Flask, request, jsonify
 import sqlite3
+import os
 import jwt
 import datetime
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # Crear la aplicación Flask
 app = Flask(__name__)
@@ -13,7 +16,7 @@ app = Flask(__name__)
 SECRET_KEY = 'A9d$3f8#GjLqPwzVx7!KmRtYsB2eH4Uw'
 
 # Nombre del archivo de base de datos SQLite
-DB_NAME = 'main_database.db'
+DB_NAME = os.path.join(BASE_DIR, 'main_database.db')
 
 # Función para inicializar la base de datos y crear la tabla de usuarios si no existe
 def init_db():

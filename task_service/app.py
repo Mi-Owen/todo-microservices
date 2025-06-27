@@ -1,14 +1,17 @@
 from flask import Flask, request, jsonify
 import sqlite3
 import jwt
+import os
 import datetime
 from functools import wraps
 
 # Crear la aplicación Flask
 app = Flask(__name__)
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
 # Nombre del archivo de base de datos SQLite
-DB_NAME = 'main_database.db'
+DB_NAME = os.path.join(BASE_DIR, 'main_database.db')
 
 # Clave secreta para verificar tokens JWT (debe ser la misma que en auth_service)
 SECRET_KEY = 'A9d$3f8#GjLqPwzVx7!KmRtYsB2eH4Uw'
