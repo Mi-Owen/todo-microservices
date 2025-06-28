@@ -87,7 +87,7 @@ echo "Servicios detenidos."
 4.3 Crear tarea
 
 - Método: POST
-- URL: http://localhost:5003/tasks
+- URL: http://localhost:5000/tasks
 - Headers:
     Authorization: Bearer <tu_token_aquí>
 - Body (raw, JSON):
@@ -100,14 +100,14 @@ echo "Servicios detenidos."
 4.4 Listar tareas
 
 - Método: GET
-- URL: http://localhost:5003/tasks
+- URL: http://localhost:5000/tasks
 - Headers:
     Authorization: Bearer <tu_token_aquí>
 
 4.5 Actualizar tarea
 
 - Método: PUT
-- URL: http://localhost:5003/tasks/<task_id>
+- URL: http://localhost:5000/tasks/<task_id>
 - Headers:
     Authorization: Bearer <tu_token_aquí>
 - Body (raw, JSON):
@@ -118,7 +118,7 @@ echo "Servicios detenidos."
 4.6 Eliminar tarea (borrado lógico)
 
 - Método: DELETE
-- URL: http://localhost:5003/tasks/<task_id>
+- URL: http://localhost:5000/tasks/<task_id>
 - Headers:
     Authorization: Bearer <tu_token_aquí>
 
