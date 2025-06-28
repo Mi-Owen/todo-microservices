@@ -46,8 +46,9 @@ def proxy_user(path):
 # Cuando se pasa un path/id, se permiten GET, PUT y DELETE
 @app.route('/tasks/<path:path>', methods=['GET', 'PUT', 'DELETE'])
 def proxy_tasks(path=''):
-    # Enviar la solicitud al microservicio de tareas
-    return proxy_request(TASK_SERVICE_URL, path)
+    # Asegura que siempre redirige a /tasks o /tasks/<id>
+    fixed_path = 'tasks' if path == '' else f'tasks/{path}'
+    return proxy_request(TASK_SERVICE_URL, fixed_path)
 
 # Ejecutar la app Flask en el puerto 5000 en modo debug (útil para desarrollo)
 if __name__ == '__main__':
