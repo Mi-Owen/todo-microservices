@@ -1,14 +1,105 @@
-# Proyecto Fullstack
+Proyecto Fullstack - Todo App
 
-## Estructura
+Aplicación fullstack con microservicios en Flask y frontend en Angular, diseñada para gestionar tareas de manera eficiente y segura.
 
-- `frontend/`: Aplicación Angular (puerto 4200)
-- `backend/`: Microservicios + API Gateway en Flask (puerto 5000)
+Estructura del Proyecto
 
-## Cómo iniciar
+.
+├── backend/ # Microservicios y API Gateway en Flask
+└── frontend/ # Aplicación Angular (puerto 4200)
 
-### Backend
-```bash
+Tecnologías Utilizadas
+
+- Frontend: Angular
+- Backend: Python 3 + Flask + SQLite
+- Seguridad: JWT (JSON Web Tokens)
+- Comunicación: API Gateway + Requests
+- Herramientas: Postman, WSL (Windows Subsystem for Linux)
+
+Backend - Configuración e Inicio
+
+1. Instalar dependencias
+
 cd backend
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 
+2. Iniciar servicios
+
+bash start_services.sh
+
+3. Detener servicios
+
+bash stop_services.sh
+
+Ejemplo stop_services.sh:
+#!/bin/bash
+echo "Deteniendo servicios..."
+pkill -f auth_service.py
+pkill -f user_service.py
+pkill -f task_service.py
+pkill -f api_gateway.py
+echo "Servicios detenidos."
+
+Estructura de Microservicios
+
+| Servicio     | Ruta                | Descripción                      |
+| ------------ | ------------------- | -------------------------------- |
+| Auth Service | auth_service/app.py | Registro, login y gestión de JWT |
+| User Service | user_service/app.py | CRUD de usuarios                 |
+| Task Service | task_service/app.py | CRUD de tareas con estados       |
+| API Gateway  | api_gateway/app.py  | Enrutamiento hacia los servicios |
+
+Pruebas con Postman
+
+1. Registrar usuario (POST → http://localhost:5000/auth/register)
+
+{
+"username": "usuario1",
+"password": "12345678",
+"email": "usuario1@correo.com",
+"birthdate": "1990-01-01",
+"secret_question": "Color favorito?",
+"secret_answer": "Azul"
+}
+
+2. Login y obtención de token (POST → http://localhost:5000/auth/login)
+
+{
+"username": "usuario1",
+"password": "miContraseña123"
+}
+
+Guardar el token JWT para futuras peticiones.
+
+3. Crear tarea (POST → http://localhost:5003/tasks)
+   Authorization: Bearer <tu_token_aquí>
+
+{
+"name": "Terminar proyecto",
+"description": "Completar backend para la app",
+"deadline": "2025-07-15T23:59:00"
+}
+
+4. Listar tareas (GET → http://localhost:5003/tasks)
+
+Authorization: Bearer <tu_token_aquí>
+
+5. Actualizar estado de tarea (PUT → http://localhost:5003/tasks/<task_id>)
+
+Authorization: Bearer <tu_token_aquí>
+
+{
+"status": "Completed"
+}
+
+6. Eliminar tarea (DELETE → http://localhost:5003/tasks/<task_id>)
+
+Authorization: Bearer <tu_token_aquí>
+
+📝 Notas Finales
+
+- Todos los microservicios comparten la misma base de datos: main_database.db
+- Los JWT se validan en los endpoints protegidos
+- Puedes añadir más validaciones, logs o mejoras según tus necesidades
