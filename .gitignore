@@ -1,22 +1,29 @@
-# Entorno virtual
+# Python
 venv/
 venv2/
 env/
 
-# Archivos compilados de Python
 *.pyc
 __pycache__/
 
-# Bases de datos locales SQLite
 *.db
 database.db
 
-# Archivos de log
 *.log
 
-# Configuraciones del editor
 .vscode/
 .idea/
 
-# Otros
 .DS_Store
+
+# Node / Angular
+/node_modules/
+/dist/
+/out-tsc/
+/.angular/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+.cache/
