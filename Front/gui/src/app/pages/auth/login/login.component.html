@@ -1,0 +1,35 @@
+<div class="login-container">
+  <p-card class="login-card">
+    <ng-template #header>
+      <div class="login-header">
+        <h2 class="login-title">Login</h2>
+        <p class="login-subtitle">Enter your data</p>
+      </div>
+    </ng-template>
+
+    <div class="login-input-group">
+      <p-inputgroup>
+        <p-inputgroup-addon>
+          <i class="pi pi-user login-icon"></i>
+        </p-inputgroup-addon>
+        <input pInputText [(ngModel)]="username" placeholder="Username" class="login-input" />
+      </p-inputgroup>
+    </div>
+
+    <div class="login-input-group">
+      <p-inputgroup>
+        <p-inputgroup-addon>
+          <i class="pi pi-lock login-icon"></i>
+        </p-inputgroup-addon>
+        <input pInputText [(ngModel)]="password" placeholder="Password" type="password" class="login-input" />
+      </p-inputgroup>
+    </div>
+
+    <ng-template #footer>
+      <div class="login-footer">
+        <p-button label="Cancel" severity="secondary" class="login-button" [outlined]="true"></p-button>
+        <p-button label="Login" class="login-button" (onClick)="onLogin()"></p-button>
+      </div>
+    </ng-template>
+  </p-card>
+</div>
