@@ -1,35 +1,92 @@
 <div class="login-container">
   <p-card class="login-card">
+
+    <!-- Encabezado dinámico -->
     <ng-template #header>
       <div class="login-header">
         <h2 class="login-title">Login</h2>
-        <p class="login-subtitle">Enter your data</p>
+        <p class="login-subtitle">
+          {{ step === 'credentials' ? 'Enter your credentials' : 'Enter the verification code' }}
+        </p>
       </div>
     </ng-template>
 
-    <div class="login-input-group">
-      <p-inputgroup>
-        <p-inputgroup-addon>
-          <i class="pi pi-user login-icon"></i>
-        </p-inputgroup-addon>
-        <input pInputText [(ngModel)]="username" placeholder="Username" class="login-input" />
-      </p-inputgroup>
+    <!-- Paso 1: Usuario y contraseña -->
+    <div *ngIf="step === 'credentials'">
+      <div class="login-input-group">
+        <p-inputgroup>
+          <p-inputgroup-addon>
+            <i class="pi pi-user login-icon"></i>
+          </p-inputgroup-addon>
+          <input
+            pInputText
+            [(ngModel)]="username"
+            placeholder="Username"
+            class="login-input"
+          />
+        </p-inputgroup>
+      </div>
+
+      <div class="login-input-group">
+        <p-inputgroup>
+          <p-inputgroup-addon>
+            <i class="pi pi-lock login-icon"></i>
+          </p-inputgroup-addon>
+          <input
+            pInputText
+            [(ngModel)]="password"
+            placeholder="Password"
+            type="password"
+            class="login-input"
+          />
+        </p-inputgroup>
+      </div>
     </div>
 
-    <div class="login-input-group">
-      <p-inputgroup>
-        <p-inputgroup-addon>
-          <i class="pi pi-lock login-icon"></i>
-        </p-inputgroup-addon>
-        <input pInputText [(ngModel)]="password" placeholder="Password" type="password" class="login-input" />
-      </p-inputgroup>
+    <!-- Paso 2: Código OTP -->
+    <div *ngIf="step === 'otp'">
+      <div class="login-input-group">
+        <p-inputgroup>
+          <p-inputgroup-addon>
+            <i class="pi pi-shield login-icon"></i>
+          </p-inputgroup-addon>
+          <input
+            pInputText
+            [(ngModel)]="otp"
+            placeholder="Enter OTP code"
+            maxlength="6"
+            class="login-input"
+          />
+        </p-inputgroup>
+      </div>
     </div>
 
+    <!-- Mensaje de error si ocurre -->
+    <p-message
+      *ngIf="errorMessage"
+      severity="error"
+      text="{{ errorMessage }}"
+    ></p-message>
+
+    <!-- Botones de acción -->
     <ng-template #footer>
       <div class="login-footer">
-        <p-button label="Cancel" severity="secondary" class="login-button" [outlined]="true"></p-button>
-        <p-button label="Login" class="login-button" (onClick)="onLogin()"></p-button>
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          class="login-button"
+          [outlined]="true"
+          (onClick)="resetToCredentials()"
+        ></p-button>
+
+        <p-button
+          label="Continue"
+          class="login-button"
+          [loading]="isLoading"
+          (onClick)="onLogin()"
+        ></p-button>
       </div>
     </ng-template>
+
   </p-card>
 </div>

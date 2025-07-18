@@ -1,0 +1,88 @@
+/* Estilos base (modo claro) */
+
+.kanban-splitter {
+  height: 100%;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.kanban-column {
+  flex: 1;
+  background-color: #f4f4f4;
+  border-radius: 8px;
+  padding: 0.5rem;
+  min-height: 300px;
+  color: #000;
+}
+
+.task-card {
+  background-color: white;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border-radius: 4px;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  color: #000;
+}
+
+/* Bordes de colores según estado */
+.task-blue {
+  border-left: 5px solid blue;
+}
+.task-green {
+  border-left: 5px solid green;
+}
+.task-orange {
+  border-left: 5px solid orange;
+}
+.task-gray {
+  border-left: 5px solid gray;
+}
+
+/* Estilos para el panel header de primeng (opcional) */
+::ng-deep .custom-panel .p-panel-header {
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+  border-radius: 4px;
+
+}
+
+/* =========================
+   Modos Oscuro con .my-app-dark
+   ========================= */
+
+.my-app-dark .kanban-column {
+  background-color: #222;
+  color: #eee;
+}
+
+.my-app-dark .task-card {
+  background-color: #333;
+  color: #ddd;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+}
+
+/* Bordes más claros para modo oscuro */
+.my-app-dark .task-blue {
+  border-left-color: lightblue;
+}
+.my-app-dark .task-green {
+  border-left-color: lightgreen;
+}
+.my-app-dark .task-orange {
+  border-left-color: orange; /* o un naranja más claro si quieres */
+}
+.my-app-dark .task-gray {
+  border-left-color: lightgray;
+}
+
+/* Panel header modo oscuro */
+::ng-deep .my-app-dark .custom-panel .p-panel-header {
+  background-color: #0056b3;
+  color: #eee;
+}

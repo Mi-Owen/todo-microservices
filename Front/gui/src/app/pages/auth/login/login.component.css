@@ -1,78 +1,80 @@
 /* Contenedor centrado con fondo suave */
 .login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 1rem;
-  background: linear-gradient(135deg, #e3f2fd, #fce4ec);
+  display: flex; /* Utiliza Flexbox para alinear contenido */
+  justify-content: center; /* Centra horizontalmente */
+  align-items: center; /* Centra verticalmente */
+  min-height: 85vh; /* Ocupa toda la altura de la ventana */
+  padding: 1rem; /* Espacio interno (padding) de 1 rem alrededor */
+  /* background: linear-gradient(135deg, #e3f2fd, #fce4ec); */ /* (comentado) Fondo degradado opcional */
 }
+
 
 /* Estilo del card */
 .login-card {
-  width: 28rem;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-  background-color: white;
+  width: 28rem; /* Ancho fijo del contenedor (card) */
+  padding: 2rem; /* Espacio interno alrededor del contenido */
+  border-radius: 10px; /* Bordes redondeados */
+  /* box-shadow: 0 0 20px rgba(0, 0, 0, 0.05); */ /* (comentado) Sombra suave para profundidad */
+  /* background-color: white; */ /* (comentado) Fondo blanco para el card */
 }
 
 /* Título del login */
 .login-title {
-  text-align: center;
-  color: #1e88e5;
-  margin: 0;
+  padding: 1rem; /* Espacio alrededor del texto */
+  text-align: center; /* Centra el texto horizontalmente */
+  color: #1e88e5; /* Color azul (Google Material Blue) */
+  margin: 0; /* Elimina el margen externo del h1/h2 */
 }
 
 /* Subtítulo */
 .login-subtitle {
-  text-align: center;
-  color: #616161;
-  font-size: 0.95rem;
-  margin-top: 0.5rem;
-  margin-bottom: 2rem;
+  text-align: center; /* Centra el texto */
+  color: #616161; /* Color gris oscuro para contraste suave */
+  font-size: 0.95rem; /* Tamaño de fuente ligeramente menor */
+  margin-top: 0.5rem; /* Espacio arriba */
+  margin-bottom: 1rem; /* Espacio debajo del subtítulo */
 }
 
 /* Grupo de inputs */
 .login-input-group {
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem; /* Espacio entre este grupo y el siguiente */
+ /*  border-bottom: 1px solid #ccc; Línea divisoria en la parte inferior */
+  padding-bottom: 0.5rem; /* Espacio entre la línea y el contenido */
 }
 
 /* Icono en input */
 .login-icon {
-  color: #1e88e5;
+  color: #1e88e5; /* Color azul para íconos (coincide con título) */
 }
 
 /* Input */
 .login-input {
-  width: 100%;
+  width: 100%; /* Hace que el input ocupe todo el ancho del contenedor */
 }
 
 /* Footer con botones */
 .login-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2rem;
-  gap: 1rem;
+  display: flex; /* Layout flexible para alinear botones */
+  justify-content: space-between; /* Espacio entre botones */
+  align-items: center; /* Alinea verticalmente al centro */
+  margin-top: 2rem; /* Espacio entre inputs y botones */
+  gap: 1rem; /* Espacio entre los elementos internos */
 }
 
 /* Botones */
 .login-button {
-  flex: 1;
-  font-weight: bold;
+  flex: 1; /* Ocupan el mismo espacio entre ellos */
+  font-weight: bold; /* Letra en negrita */
 }
 
-/* Responsive */
+/* Responsive: adapta el diseño en pantallas pequeñas */
 @media (max-width: 480px) {
   .login-card {
-    width: 100%;
-    padding: 1.5rem;
+    width: 100%; /* Ocupa todo el ancho disponible */
+    padding: 1.5rem; /* Reduce el padding en móviles */
   }
 
   .login-footer {
-    flex-direction: column;
+    flex-direction: column; /* Apila los botones uno debajo del otro */
   }
 }

@@ -9,7 +9,11 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./pages/auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
-
+  {
+    path: 'tasks',
+    loadChildren: () =>
+      import('./pages/tasks/tasks.routes').then((m) => m.TASKS_ROUTES),
+  },
   {
     path: '**',
     loadChildren: () =>

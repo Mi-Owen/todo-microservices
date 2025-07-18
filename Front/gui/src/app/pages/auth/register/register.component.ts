@@ -1,6 +1,6 @@
 // Importa módulos comunes de Angular
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, Renderer2 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 
@@ -10,15 +10,16 @@ import { CardModule } from 'primeng/card';
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { InputTextModule } from 'primeng/inputtext';
+import { CalendarModule } from 'primeng/calendar';
 
 // Importa el servicio de autenticación
 import { AuthService } from '../../../core/auth/auth.service';
 
 // Define el componente Register
 @Component({
-  selector: 'app-register', // Nombre del selector usado en HTML
-  standalone: true, // Este componente es independiente (no requiere AppModule)
-  imports: [ // Módulos requeridos para este componente
+  selector: 'app-register',
+  standalone: true,
+  imports: [
     CommonModule,
     FormsModule,
     RouterModule,
@@ -26,53 +27,91 @@ import { AuthService } from '../../../core/auth/auth.service';
     InputGroupModule,
     InputGroupAddonModule,
     ButtonModule,
-    CardModule
+    CardModule,
+    CalendarModule,
   ],
-  templateUrl: './register.component.html', // Ruta de la plantilla HTML
-  styleUrls: ['./register.component.css']   // Ruta del archivo de estilos
+  templateUrl: './register.component.html',
+  styleUrls: ['./register.component.css'],
 })
 export class RegisterComponent {
-  // Propiedades enlazadas a los inputs del formulario
   public username: string = '';
   public password: string = '';
   public confirmPassword: string = '';
   public email: string = '';
-  public birthdate: string | Date = '';
+  public birthdate: Date | null = null; // Tipado más preciso
   public secret_question: string = '';
   public secret_answer: string = '';
-  public errorMessage: string = ''; // Para mostrar errores al usuario
+  public errorMessage: string = '';
 
-  // Inyección del servicio AuthService y el router para navegación
-  constructor(private authService: AuthService, private router: Router) {}
+  public qrCodeUrl: string = '';
+  public showQr: boolean = false;
+  public darkMode: boolean = false;
 
-  // Método que se ejecuta al hacer clic en "Registrar"
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private renderer: Renderer2
+  ) {
+    const savedMode = localStorage.getItem('darkMode');
+    this.darkMode = savedMode ? JSON.parse(savedMode) : false;
+  }
+
+  toggleDarkMode(): void {
+    this.darkMode = !this.darkMode;
+    localStorage.setItem('darkMode', String(this.darkMode));
+    console.debug('Dark mode:', this.darkMode); // Reemplazado por console.debug
+  }
+
   onRegister(): void {
-    // Verifica que las contraseñas coincidan
     if (this.password !== this.confirmPassword) {
       this.errorMessage = 'Las contraseñas no coinciden.';
       return;
     }
 
-    // Prepara los datos para enviarlos al backend
+    // Validar campos obligatorios
+    if (
+      !this.username ||
+      !this.password ||
+      !this.email ||
+      !this.secret_question ||
+      !this.secret_answer ||
+      !this.birthdate
+    ) {
+      this.errorMessage = 'Todos los campos son obligatorios.';
+      return;
+    }
+
+    let formattedBirthdate: string = '';
+
+    if (this.birthdate instanceof Date) {
+      formattedBirthdate = this.birthdate.toISOString().split('T')[0];
+    } else {
+      formattedBirthdate = new Date(this.birthdate).toISOString().split('T')[0];
+    }
+
     const data = {
       username: this.username,
       password: this.password,
       email: this.email,
-      birthdate: typeof this.birthdate === 'string' ? this.birthdate : this.birthdate.toISOString().split('T')[0],
+      birthdate: formattedBirthdate,
       secret_question: this.secret_question,
-      secret_answer: this.secret_answer
+      secret_answer: this.secret_answer,
     };
 
-    // Llama al servicio para registrar al usuario
     this.authService.register(data).subscribe({
       next: (res) => {
-        console.log('Usuario registrado:', res); // Log para depuración
-        this.router.navigate(['/auth/login']);   // Redirige al login después de registrar
+        console.debug('Usuario registrado:', res); // Reemplazado por console.debug
+        if (res.qrCodeUrl) {
+          this.qrCodeUrl = res.qrCodeUrl;
+          this.showQr = true;
+        } else {
+          this.router.navigate(['/auth/login']);
+        }
       },
       error: (err) => {
-        // Muestra un mensaje de error si la respuesta del servidor lo incluye
+        console.error('Error en el registro:', err); // Añadido console.error para trazar errores
         this.errorMessage = err.error?.error || 'Error al registrar usuario.';
-      }
+      },
     });
   }
 }

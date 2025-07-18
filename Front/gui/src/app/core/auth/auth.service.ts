@@ -1,44 +1,44 @@
-// Importa el servicio HttpClient para hacer peticiones HTTP
-import { HttpClient } from '@angular/common/http';
+// Importa el servicio HttpClient para realizar peticiones HTTP al backend
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
-// Marca esta clase como inyectable (puede ser utilizada en otras partes con DI)
+// Permite que Angular inyecte esta clase en cualquier componente o servicio
 import { Injectable } from '@angular/core';
 
-// Importa Observable para manejar respuestas asíncronas
-import { Observable } from 'rxjs';
+// Importa operadores de RxJS para trabajar con peticiones asíncronas
+import { catchError, Observable, tap } from 'rxjs';
 
-// Decorador que indica que el servicio estará disponible en toda la aplicación
+// Este decorador marca el servicio como disponible para toda la app (Singleton)
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  // URL base del backend o API Gateway para autenticación
+  // URL base del backend Flask donde se expone el servicio de autenticación
   private apiUrl = 'http://localhost:5000/auth';
 
-  // Inyección del servicio HttpClient para hacer peticiones HTTP
+  // Constructor que inyecta el cliente HTTP de Angular
   constructor(private http: HttpClient) {}
 
-  /**
-   * Método para iniciar sesión.
-   * Hace una petición POST al endpoint /login con nombre de usuario y contraseña.
-   * 
-   * ⚠️ Nota: No se usa `withCredentials: true`, por lo tanto:
-   * - No se envían cookies o tokens de sesión automáticamente.
-   * - El navegador no activa la validación CORS estricta para credenciales.
-   */
+  // Método para iniciar sesión
   login(username: string, password: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/login`, {
-      username,
-      password,
-    });
+    // Construye el cuerpo de la solicitud con las credenciales
+    const loginData = { username, password };
+    console.debug('AuthService - Enviando login:', loginData);
+    
+    // Hace una petición POST al backend con las credenciales
+    return this.http.post(`${this.apiUrl}/login`, loginData).pipe(
+      // `tap` permite ver la respuesta sin modificarla
+      tap(response => {
+        console.debug('AuthService - Respuesta login:', response);
+      }),
+      // Captura errores en caso de fallo de login
+      catchError(error => {
+        console.debug('AuthService - Error login:', error);
+        throw error;
+      })
+    );
   }
 
-  /**
-   * Método para registrar un nuevo usuario.
-   * Envía un objeto con todos los datos del formulario al endpoint /register.
-   * 
-   * @param data Objeto con la información de registro del usuario
-   */
+  // Método para registrar un nuevo usuario
   register(data: {
     username: string;
     password: string;
@@ -47,6 +47,94 @@ export class AuthService {
     secret_question: string;
     secret_answer: string;
   }): Observable<any> {
+    // Envía los datos del formulario al endpoint /register
     return this.http.post(`${this.apiUrl}/register`, data);
+  }
+
+  // Método para verificar el OTP como parte del 2FA
+  verifyOtp(otp: string, tempToken: string): Observable<any> {
+    // Muestra parte del token temporal por seguridad en consola
+    console.debug('AuthService - Verificando OTP:', {
+      otp,
+      tempToken: tempToken ? `${tempToken.substring(0, 20)}...` : 'NO TOKEN',
+      tokenLength: tempToken ? tempToken.length : 0 
+    });
+
+    // Verifica si el token está vacío o nulo
+    if (!tempToken || tempToken.trim() === ''){
+      console.debug('AuthService - Token temporal vacío');
+      throw new Error('Token temporal requerido');
+    }
+
+    // Define los headers para la solicitud, incluyendo el token Bearer
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${tempToken}` 
+    });
+
+    // Muestra los headers enviados (solo para debug)
+    console.debug('AuthService - Headers enviados:', {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${tempToken.substring(0, 20)}...`
+    });
+
+    // Construye el cuerpo con el código OTP ingresado
+    const otpData = { otp: otp.trim() };
+    console.debug('AuthService - Body enviado:', otpData);
+
+    // Hace la solicitud POST para verificar el OTP
+    return this.http.post(`${this.apiUrl}/verify-otp`, otpData, { headers }).pipe(
+      tap(response => {
+        console.debug('AuthService - Respuesta OTP:', response);
+      }),
+      catchError(error => {
+        console.error('AuthService - Error OTP:', {
+          status: error.status,
+          statusText: error.statusText,
+          error: error.error,
+          url: error.url,
+          headers: error.headers
+        });
+        throw error;
+      })
+    );
+  }
+
+  // Elimina el token del almacenamiento local (cierra sesión)
+  logout(): void {
+    localStorage.removeItem('token');
+  }
+
+  // Verifica si hay un token guardado → el usuario está autenticado
+  isAuthenticated(): boolean {
+    return !!localStorage.getItem('token');
+  }
+
+  // Método para depurar un token JWT
+  debugToken(token: string): void {
+    if (!token) {
+      console.debug('Token Debug: Token es null o undefined');
+      return;
+    }
+
+    // Muestra información del token (inicio, final, longitud, etc.)
+    console.debug('Token Debug:', {
+      length: token.length,
+      starts: token.substring(0, 20),
+      ends: token.substring(token.length - 20),
+      isString: typeof token === 'string',
+      hasSpaces: token.includes(' ')
+    });
+
+    // Intenta decodificar el payload del JWT para ver su contenido
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        console.debug('Token Payload:', payload);
+      }
+    } catch (e) {
+      console.debug('No se pudo decodificar el token:', e);
+    }
   }
 }

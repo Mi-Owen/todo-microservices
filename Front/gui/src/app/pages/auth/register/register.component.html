@@ -54,7 +54,17 @@
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
     </div>
+      <!-- QR si aplica -->
+    <div *ngIf="showQr" class="text-center mt-4">
+      <h4 class="mb-2">Escanea este código con Google Authenticator:</h4>
+      <img [src]="qrCodeUrl" alt="Código QR" width="200" class="mb-2" />
+      <p>Después de escanearlo, puedes iniciar sesión con tu OTP.</p>
+    </div>
 
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="text-center text-red-500 mt-3">
+      {{ errorMessage }}
+    </div>
     <ng-template #footer>
       <div class="button-group">
         <button pButton label="Registrar" (click)="onRegister()" class="btn-register w-full"></button>

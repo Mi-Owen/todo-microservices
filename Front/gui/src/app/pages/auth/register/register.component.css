@@ -2,15 +2,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #e3f2fd, #fce4ec);
+  min-height: 75vh;
+  /* background: linear-gradient(135deg, #e3f2fd, #fce4ec); */
   padding: 1rem;
 }
 
 p-card {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
   border-radius: 10px;
-  background-color: white;
+  
 }
 
 .register-title {
@@ -83,7 +83,7 @@ input[pInputText] {
 .input-wrapper {
   margin-bottom: 1.5rem;
   position: relative;
-  border-bottom: 1px solid #ccc;
+  /* border-bottom: 1px solid #ccc; */
   padding-bottom: 0.5rem;
 }
 
