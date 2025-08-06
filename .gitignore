@@ -30,10 +30,13 @@ node_modules/
 /dist/
 /out-tsc/
 /.angular/
-.angular/cache/
+/.angular/cache/
 .cache/
 tmp/
 tmp/**
+
+# ⚠️ Línea añadida para ignorar específicamente .angular dentro de Front/gui/
+Front/gui/.angular/
 
 npm-debug.log*
 yarn-debug.log*
