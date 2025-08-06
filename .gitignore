@@ -1,4 +1,4 @@
-# Python
+# === Python ===
 venv/
 venv2/
 env/
@@ -8,40 +8,10 @@ __pycache__/
 
 *.db
 database.db
-
 *.log
 
+# === IDEs and Editors ===
 .vscode/
-.idea/
-
-.DS_Store
-
-# Node / Angular
-/node_modules/
-/dist/
-/out-tsc/
-/.angular/
-
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-.cache/
-
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
-
-# Compiled output
-/dist
-/tmp
-/out-tsc
-/bazel-out
-
-# Node
-/node_modules
-npm-debug.log
-yarn-error.log
-
-# IDEs and editors
 .idea/
 .project
 .classpath
@@ -49,24 +19,42 @@ yarn-error.log
 *.launch
 .settings/
 *.sublime-workspace
+.DS_Store
+Thumbs.db
 
-# Visual Studio Code
+# === Node / Angular ===
+node_modules/
+**/node_modules/
+**/node_modules/**
+**/node_modules/**/*
+/dist/
+/out-tsc/
+/.angular/
+.angular/cache/
+.cache/
+tmp/
+tmp/**
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+testem.log
+
+# === Optionally ignore package-lock (not always recommended) ===
+**/package-lock.json
+
+# === Visual Studio Code exclusions ===
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history/*
 
-# Miscellaneous
-/.angular/cache
+# === Miscellaneous ===
 .sass-cache/
 /connect.lock
 /coverage
 /libpeerconnection.log
-testem.log
 /typings
-
-# System files
-.DS_Store
-Thumbs.db
+.history/
+bazel-out/
