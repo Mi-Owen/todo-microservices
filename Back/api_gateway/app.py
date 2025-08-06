@@ -1,57 +1,115 @@
+import time
+import logging
+from datetime import datetime
 import requests
-from flask import Flask, jsonify, request
-from flask_cors import CORS # Necesario para poder interacturar con el front
+import jwt
+from flask import Flask, jsonify, request, g
+from flask_cors import CORS
+
+# Configura tu clave secreta para decodificar JWT (debe coincidir con la del backend de auth)
+# ⚠️ Reemplaza esto por tu clave real
+SECRET_KEY = 'A9d$3f8#GjLqPwzVx7!KmRtYsB2eH4Uw'
 
 # Crear una instancia de la aplicación Flask
 app = Flask(__name__)
+CORS(app, origins=["http://localhost:4200"])
 
-CORS(app, origins=["http://localhost:4200"]) # Permite las peticiones desde otro puerto 
+# Configuración del logger
+logging.basicConfig(
+    filename='apigateway.log',
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 # URLs base de los microservicios que se van a consumir
-AUTH_SERVICE_URL = 'http://localhost:5001'   # Servicio de autenticación
-USER_SERVICE_URL = 'http://localhost:5002'   # Servicio de usuario
-TASK_SERVICE_URL = 'http://localhost:5003'   # Servicio de tareas
+AUTH_SERVICE_URL = 'http://localhost:5001'
+USER_SERVICE_URL = 'http://localhost:5002'
+TASK_SERVICE_URL = 'http://localhost:5003'
+
+# Función para extraer el usuario desde el token JWT
+
+
+def get_user_from_token(token):
+    try:
+        token = token.replace("Bearer ", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload.get("username") or payload.get("user_id") or "unknown"
+    except Exception:
+        return "invalid_token"
+
+# Middleware: antes de cada request, guardar tiempo de inicio
+
+
+@app.before_request
+def start_timer():
+    g.start_time = time.time()
+
+# Middleware: después de cada request, registrar log
+
+
+@app.after_request
+def log_request(response):
+    if not hasattr(g, 'start_time'):
+        g.start_time = time.time()
+
+    duration = round(time.time() - g.start_time, 4)
+    timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    status = response.status_code
+    method = request.method
+    full_path = request.full_path
+
+    # Obtener el usuario desde el token si existe
+    raw_token = request.headers.get('Authorization')
+    user = get_user_from_token(raw_token) if raw_token else 'anonymous'
+
+    log_message = (
+        f"{timestamp} | {method} {full_path} | Status: {status} | Time: {duration}s | User: {user}"
+    )
+    logging.info(log_message)
+
+    return response
 
 # Función genérica para reenviar (proxy) la solicitud HTTP al microservicio correspondiente
-def proxy_request(service_url, path):
-    method = request.method  # Obtener el método HTTP (GET, POST, etc.) de la solicitud entrante
-    url = f'{service_url}/{path}'  # Construir la URL completa hacia el microservicio
 
-    # Hacer la petición HTTP hacia el microservicio usando la librería requests
+
+def proxy_request(service_url, path):
+    method = request.method
+    url = f'{service_url}/{path}'
+
     resp = requests.request(
-        method=method,  # Método HTTP
-        url=url,        # URL destino
-        json=request.get_json(silent=True),  # Datos JSON recibidos, si hay
-        # Copiar los headers de la solicitud original, excepto el 'host' que puede interferir
-        headers={key: value for key, value in request.headers if key.lower() != 'host'}
+        method=method,
+        url=url,
+        json=request.get_json(silent=True),
+        headers={key: value for key,
+                 value in request.headers if key.lower() != 'host'}
     )
 
-    # Intentar devolver la respuesta JSON del microservicio con el código de estado HTTP
     try:
         return jsonify(resp.json()), resp.status_code
     except ValueError:
-        # Si la respuesta no es JSON, devolver el texto plano y el código de estado
         return resp.text, resp.status_code
 
-# Ruta que proxy para las solicitudes que van al servicio de autenticación
+# Rutas proxy para cada microservicio
+
+
 @app.route('/auth/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
 def proxy_auth(path):
     return proxy_request(AUTH_SERVICE_URL, path)
 
-# Ruta que proxy para las solicitudes que van al servicio de usuario
+
 @app.route('/user/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
 def proxy_user(path):
     return proxy_request(USER_SERVICE_URL, path)
 
-# Rutas para el servicio de tareas
-# Cuando no se pasa un id específico (solo /tasks), se permiten GET y POST
+
 @app.route('/tasks', methods=['GET', 'POST'])
-# Cuando se pasa un path/id, se permiten GET, PUT y DELETE
 @app.route('/tasks/<path:path>', methods=['GET', 'PUT', 'DELETE'])
 def proxy_tasks(path=''):
-    # Asegura que siempre redirige a /tasks o /tasks/<id>
     fixed_path = 'tasks' if path == '' else f'tasks/{path}'
     return proxy_request(TASK_SERVICE_URL, fixed_path)
 
-# Ejecutar la app Flask en el puerto 5000 en modo debug (útil para desarrollo)
+
+# Ejecutar la app Flask
 if __name__ == '__main__':
     app.run(port=5000, debug=True)

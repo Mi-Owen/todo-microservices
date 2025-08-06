@@ -132,7 +132,7 @@ export class LoginComponent {
     }
 
     if (!/^\d{6}$/.test(this.otp)) {
-      this.errorMessage = 'El código OTP debe tener 6 dígitos numéricos';
+      this.errorMessage = 'OTP code must be 6 numerical digits';
       this.isLoading = false;
       return;
     }
@@ -163,7 +163,7 @@ export class LoginComponent {
             this.errorMessage = 'Token expirado. Vuelve a iniciar sesión.';
             this.resetToCredentials();
           } else {
-            this.errorMessage = 'Código OTP incorrecto';
+            this.errorMessage = 'Incorrect OTP code';
           }
         } else if (err.status === 400) {
           this.errorMessage = err.error?.error || 'Datos inválidos';
