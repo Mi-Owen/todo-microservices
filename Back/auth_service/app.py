@@ -28,6 +28,7 @@ def init_db():
     with engine.connect() as conn:
         with conn.begin():
             # Crear tabla con todos los constraints necesarios
+            # Si la tabla ya existe, esto no hará nada
             conn.execute(text('''
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
@@ -38,23 +39,7 @@ def init_db():
                     totp_secret TEXT
                 )
             '''))
-            
-            # Agregar constraints si no existen (para tablas existentes)
-            try:
-                conn.execute(text('''
-                    ALTER TABLE users 
-                    ADD CONSTRAINT unique_username UNIQUE (username)
-                '''))
-            except IntegrityError:
-                pass  # Constraint ya existe
-            
-            try:
-                conn.execute(text('''
-                    ALTER TABLE users 
-                    ADD CONSTRAINT unique_email UNIQUE (email)
-                '''))
-            except IntegrityError:
-                pass  # Constraint ya existe
+            print("Tabla users inicializada correctamente")
 
 @app.route('/register', methods=['POST'])
 def register():
