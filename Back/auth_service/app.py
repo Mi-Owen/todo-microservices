@@ -43,18 +43,24 @@ def register():
     if not data or 'username' not in data or 'password' not in data or 'email' not in data:
         return jsonify({'error': 'Faltan campos'}), 400
 
+    username = data['username'].strip()
     hashed_password = generate_password_hash(data['password'])
     totp_secret = pyotp.random_base32()
 
     try:
         with engine.connect() as conn:
+            # Verificar si el usuario ya existe
+            existing = conn.execute(text("SELECT 1 FROM users WHERE username = :u"), {"u": username}).fetchone()
+            if existing:
+                return jsonify({'error': 'Nombre de usuario ya existe'}), 409
+
             conn.execute(text("""
                 INSERT INTO users (username, password, email, totp_secret)
                 VALUES (:u, :p, :e, :t)
-            """), {"u": data['username'], "p": hashed_password, "e": data['email'], "t": totp_secret})
+            """), {"u": username, "p": hashed_password, "e": data['email'], "t": totp_secret})
 
             otp_uri = pyotp.totp.TOTP(totp_secret).provisioning_uri(
-                name=data['username'], issuer_name="SeguridadApp"
+                name=username, issuer_name="SeguridadApp"
             )
             qr = qrcode.make(otp_uri)
             buf = io.BytesIO()
@@ -64,7 +70,9 @@ def register():
 
         return jsonify({'message': 'Usuario registrado correctamente', 'qrCodeUrl': qr_url}), 201
     except IntegrityError:
+        # Por si acaso otro request hizo insert antes
         return jsonify({'error': 'Nombre de usuario ya existe'}), 409
+
 
 @app.route('/login', methods=['POST'])
 def login():

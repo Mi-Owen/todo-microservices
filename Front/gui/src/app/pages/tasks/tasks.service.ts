@@ -16,7 +16,7 @@ export interface Task {
   providedIn: 'root'
 })
 export class TasksService {
-  private baseUrl = 'https://api-gateway-kwuw.onrender.com/tasks'; // ✅ CORREGIDO
+  private baseUrl = 'https://api-gateway-hhng.onrender.com/tasks'; // ✅ CORREGIDO
 
   constructor(private http: HttpClient) {}
 
