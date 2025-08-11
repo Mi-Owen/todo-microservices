@@ -70,7 +70,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-AUTH_SERVICE_URL = os.getenv('AUTH_SERVICE_URL', 'https://todo-microservices-opco.onrender.com')
+AUTH_SERVICE_URL = os.getenv('AUTH_SERVICE_URL', 'https://auth-service-1783.onrender.com')
 USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'https://user-service-ettw.onrender.com')
 TASK_SERVICE_URL = os.getenv('TASK_SERVICE_URL', 'https://task-service-r1c9.onrender.com')
 
