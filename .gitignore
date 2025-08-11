@@ -61,3 +61,8 @@ testem.log
 /typings
 .history/
 bazel-out/
+
+Back/api_gateway/firebase-service-account.json
+Back/api_gateway/firebase-service-account.json:Zone.Identifier
+Front/gui/src/environments/
+Back/logs/
