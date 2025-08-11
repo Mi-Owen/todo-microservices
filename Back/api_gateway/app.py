@@ -3,13 +3,12 @@ import logging
 from datetime import datetime
 import requests
 import jwt
-from flask import Flask, jsonify, request, g
+from flask import Flask, jsonify, request, g, Response
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
 import tempfile
-import json
 
 # Firebase Admin
 import firebase_admin
@@ -151,17 +150,25 @@ def proxy_request(service_url, path):
     method = request.method
     url = f'{service_url}/{path}'
 
-    resp = requests.request(
-        method=method,
-        url=url,
-        json=request.get_json(silent=True),
-        headers={key: value for key, value in request.headers if key.lower() != 'host'}
-    )
+    # Copiar headers excepto Host
+    headers = {key: value for key, value in request.headers if key.lower() != 'host'}
 
-    try:
-        return jsonify(resp.json()), resp.status_code
-    except ValueError:
-        return resp.text, resp.status_code
+    # Enviar body tal cual (raw data)
+    data = request.get_data()
+
+    # Enviar query params
+    params = request.args
+
+    # Realizar la petición al backend
+    resp = requests.request(method=method, url=url, headers=headers, data=data, params=params)
+
+    # Excluir ciertos headers que Flask maneja solo
+    excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+    response_headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
+
+    # Devolver respuesta con contenido original, código y headers
+    response = Response(resp.content, resp.status_code, response_headers)
+    return response
 
 @app.route('/auth/login', methods=['POST'])
 @limiter.limit("5 per minute")
