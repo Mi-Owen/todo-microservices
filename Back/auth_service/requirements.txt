@@ -5,3 +5,4 @@ PyJWT
 psycopg2-binary
 Werkzeug
 gunicorn
+Pillow
