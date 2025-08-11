@@ -7,20 +7,43 @@ from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import os
+import tempfile
+import json
 
-# Agregado para Firebase Admin
+# Firebase Admin
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-SECRET_KEY = 'A9d$3f8#GjLqPwzVx7!KmRtYsB2eH4Uw'
+# Clave secreta para JWT desde variable de entorno
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("Falta configurar SECRET_KEY en variables de entorno")
+
+# Configurar credenciales de Firebase desde variable de entorno
+firebase_creds_json = os.getenv("FIREBASE_CREDENTIALS")
+if not firebase_creds_json:
+    raise RuntimeError("Falta configurar FIREBASE_CREDENTIALS en variables de entorno")
+
+# Crear archivo temporal con las credenciales Firebase
+with tempfile.NamedTemporaryFile(delete=False) as tf:
+    tf.write(firebase_creds_json.encode())
+    tf.flush()
+    cred = credentials.Certificate(tf.name)
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:4200"])
+CORS(app, origins=["http://localhost:4200"])  # Ajusta el origen según tu frontend
 
-# Inicializar Firebase Admin
-cred = credentials.Certificate('firebase-service-account.json')  # Asegúrate que la ruta es correcta
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+def get_user_from_token(token):
+    try:
+        token = token.replace("Bearer ", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload.get("username") or payload.get("user_id") or "unknown"
+    except Exception:
+        return "invalid_token"
 
 def get_user_id():
     try:
@@ -30,7 +53,6 @@ def get_user_id():
             if user and user not in ['invalid_token', 'anonymous']:
                 return f"user:{user}"
     except RuntimeError:
-        # No hay contexto de request aún, usar IP como fallback
         pass
     return f"ip:{get_remote_address()}"
 
@@ -49,17 +71,9 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-AUTH_SERVICE_URL = 'http://localhost:5001'
-USER_SERVICE_URL = 'http://localhost:5002'
-TASK_SERVICE_URL = 'http://localhost:5003'
-
-def get_user_from_token(token):
-    try:
-        token = token.replace("Bearer ", "")
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return payload.get("username") or payload.get("user_id") or "unknown"
-    except Exception:
-        return "invalid_token"
+AUTH_SERVICE_URL = os.getenv('AUTH_SERVICE_URL', 'https://todo-microservices-opco.onrender.com')
+USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'https://user-service-ettw.onrender.com')
+TASK_SERVICE_URL = os.getenv('TASK_SERVICE_URL', 'https://task-service-r1c9.onrender.com')
 
 @app.before_request
 def start_timer():
@@ -93,13 +107,11 @@ def log_response(status_code):
 
 @app.after_request
 def log_request(response):
-    # Solo loguear aquí si el status NO es de error común, para evitar doble log
     if response.status_code < 400:
         log_response(response.status_code)
     return response
 
-# Manejadores de errores para capturar logs de errores HTTP comunes
-
+# Manejo de errores comunes para loguear también
 @app.errorhandler(404)
 def handle_404(error):
     log_response(404)
@@ -124,6 +136,16 @@ def handle_500(error):
 def handle_401(error):
     log_response(401)
     return jsonify({"error": "Unauthorized"}), 401
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    user_id = get_user_id()
+    logging.warning(f"Rate limit exceeded for {user_id}: {e.description}")
+    return jsonify({
+        "error": "Rate limit exceeded",
+        "message": "Too many requests. Please try again later.",
+        "retry_after": getattr(e, 'retry_after', None)
+    }), 429
 
 def proxy_request(service_url, path):
     method = request.method
@@ -173,15 +195,6 @@ def proxy_tasks(path=''):
 def health_check():
     return jsonify({"status": "healthy", "timestamp": datetime.utcnow().isoformat()})
 
-@app.errorhandler(429)
-def ratelimit_handler(e):
-    user_id = get_user_id()
-    logging.warning(f"Rate limit exceeded for {user_id}: {e.description}")
-    return jsonify({
-        "error": "Rate limit exceeded",
-        "message": "Too many requests. Please try again later.",
-        "retry_after": getattr(e, 'retry_after', None)
-    }), 429
-
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
