@@ -80,17 +80,11 @@ def register():
         }), 201
         
     except IntegrityError as e:
-        error_str = str(e).lower()
-        print(f"IntegrityError details: {e}")  # Para debugging
-        
-        if "username" in error_str or "unique_username" in error_str:
-            return jsonify({'error': 'El nombre de usuario ya existe'}), 409
-        elif "email" in error_str or "unique_email" in error_str:
-            return jsonify({'error': 'El email ya está registrado'}), 409
-        else:
-            return jsonify({'error': 'El usuario ya existe'}), 409
+        # Similar al sqlite3.IntegrityError de tu código original
+        print(f"IntegrityError: {e}")  # Debug
+        return jsonify({'error': 'Nombre de usuario ya existe'}), 409
     except Exception as e:
-        print(f"Error inesperado: {e}")  # Para debugging
+        print(f"Error inesperado: {e}")  # Debug
         return jsonify({'error': 'Error interno del servidor'}), 500
 
 @app.route('/login', methods=['POST'])
