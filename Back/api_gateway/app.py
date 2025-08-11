@@ -153,22 +153,22 @@ def proxy_request(service_url, path):
     # Copiar headers excepto Host
     headers = {key: value for key, value in request.headers if key.lower() != 'host'}
 
-    # Enviar body tal cual (raw data)
+    # Obtener el cuerpo (data) sin procesar (bytes)
     data = request.get_data()
 
-    # Enviar query params
+    # Obtener query params
     params = request.args
 
-    # Realizar la petición al backend
+    # Enviar la petición al microservicio correspondiente
     resp = requests.request(method=method, url=url, headers=headers, data=data, params=params)
 
-    # Excluir ciertos headers que Flask maneja solo
+    # Excluir headers que Flask maneja por su cuenta
     excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
     response_headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
 
-    # Devolver respuesta con contenido original, código y headers
-    response = Response(resp.content, resp.status_code, response_headers)
-    return response
+    # Devolver la respuesta con el contenido original, status y headers limpios
+    return Response(resp.content, status=resp.status_code, headers=response_headers)
+
 
 @app.route('/auth/login', methods=['POST'])
 @limiter.limit("5 per minute")
