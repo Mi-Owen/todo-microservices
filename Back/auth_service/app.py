@@ -44,35 +44,46 @@ def register():
         return jsonify({'error': 'Faltan campos'}), 400
 
     username = data['username'].strip()
+    email = data['email'].strip() if data['email'] else None
     hashed_password = generate_password_hash(data['password'])
     totp_secret = pyotp.random_base32()
 
     try:
         with engine.connect() as conn:
-            # Verificar si el usuario ya existe
-            existing = conn.execute(text("SELECT 1 FROM users WHERE username = :u"), {"u": username}).fetchone()
-            if existing:
-                return jsonify({'error': 'Nombre de usuario ya existe'}), 409
+            with conn.begin():
+                conn.execute(text("""
+                    INSERT INTO users (username, password, email, totp_secret)
+                    VALUES (:u, :p, :e, :t)
+                """), {
+                    "u": username, 
+                    "p": hashed_password, 
+                    "e": email, 
+                    "t": totp_secret
+                })
 
-            conn.execute(text("""
-                INSERT INTO users (username, password, email, totp_secret)
-                VALUES (:u, :p, :e, :t)
-            """), {"u": username, "p": hashed_password, "e": data['email'], "t": totp_secret})
+                otp_uri = pyotp.totp.TOTP(totp_secret).provisioning_uri(
+                    name=username, issuer_name="SeguridadApp"
+                )
+                qr = qrcode.make(otp_uri)
+                buf = io.BytesIO()
+                qr.save(buf, format='PNG')
+                qr_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+                qr_url = f"data:image/png;base64,{qr_b64}"
 
-            otp_uri = pyotp.totp.TOTP(totp_secret).provisioning_uri(
-                name=username, issuer_name="SeguridadApp"
-            )
-            qr = qrcode.make(otp_uri)
-            buf = io.BytesIO()
-            qr.save(buf, format='PNG')
-            qr_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-            qr_url = f"data:image/png;base64,{qr_b64}"
-
-        return jsonify({'message': 'Usuario registrado correctamente', 'qrCodeUrl': qr_url}), 201
-    except IntegrityError:
-        # Por si acaso otro request hizo insert antes
-        return jsonify({'error': 'Nombre de usuario ya existe'}), 409
-
+        return jsonify({
+            'message': 'Usuario registrado correctamente', 
+            'qrCodeUrl': qr_url
+        }), 201
+        
+    except IntegrityError as e:
+        error_str = str(e).lower()
+        
+        if "unique_username" in error_str:
+            return jsonify({'error': 'El nombre de usuario ya existe'}), 409
+        elif "unique_email" in error_str:
+            return jsonify({'error': 'El email ya está registrado'}), 409
+        else:
+            return jsonify({'error': 'El usuario ya existe'}), 409
 
 @app.route('/login', methods=['POST'])
 def login():
