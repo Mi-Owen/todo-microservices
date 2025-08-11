@@ -44,10 +44,13 @@ input[pInputText] {
 
 .button-group {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  justify-content: center; /* centra los botones horizontalmente */
+  align-items: center; /* alinea verticalmente */
+  gap: 1rem; /* espacio entre botones */
   margin-top: 1.5rem;
 }
+
 
 .btn-register {
   background-color: #1e88e5;
@@ -91,3 +94,50 @@ input[pInputText] {
   margin-bottom: 0;
   border-bottom: none;
 }
+
+/* Posición relativa para poder posicionar el label absoluto */
+.input-wrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Label flotante absoluto */
+.input-wrapper label.floating-label {
+  position: absolute;
+  left: 2.6rem; /* deja espacio para el addon/icono (ajusta si cambias icono o padding) */
+  top: 0.8rem;
+  pointer-events: none;
+  font-size: 0.87rem;
+  color: #616161; /* tono gris similar a tu subtitle */
+  transition: all 0.15s ease-out;
+  background: white;
+  padding: 0 0.15rem;
+}
+
+/* Cuando el input está enfocado o tiene valor, sube el label */
+.input-wrapper input:focus + label.floating-label,
+.input-wrapper input:not(:placeholder-shown) + label.floating-label {
+  top: -0.6rem;
+  font-size: 0.75rem;
+  color: #1e88e5; /* tu color azul principal */
+  padding: 0 0.25rem;
+  left: 2.35rem;
+  font-weight: 600;
+}
+
+/* Asegura que input ocupe todo el ancho */
+input[pInputText] {
+  width: 100%;
+  padding: 0.75rem 0.75rem;
+}
+
+/* Ajusta inputgroup-addon para alinearse verticalmente */
+p-inputgroup-addon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Para evitar label debajo del input, no uses placeholder visible,
+   solo un espacio " " para activar :placeholder-shown */

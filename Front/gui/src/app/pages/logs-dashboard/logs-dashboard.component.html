@@ -1,0 +1,18 @@
+<!-- src/app/pages/logs-dashboard/logs-dashboard.component.html -->
+<p-card header="Total de Logs">
+  <h2>{{ totalLogs }}</h2>
+</p-card>
+
+<p-card header="Response Time">
+    <p>Promedio: {{ avgResponseTime | number:'1.2-2' }} s</p>
+    <p>Más rápido: {{ minResponseTime | number:'1.2-2' }} s</p>
+</p-card>
+
+<p-card header="API Usage">
+    <p>API más consumida: {{ getMostUsedApi() }}</p>
+    <p>API menos consumida: {{ getLeastUsedApi() }}</p>
+</p-card>
+
+<p-card header="Status Codes">
+  <p-chart type="bar" [data]="statusChartData"></p-chart>
+</p-card>

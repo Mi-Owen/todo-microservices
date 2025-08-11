@@ -1,77 +1,181 @@
+<!-- register.component.html -->
 <div class="register-container">
   <p-card [style]="{ width: '30rem', padding: '2rem' }">
+    <!-- Títulos -->
     <ng-template #title>
       <h2 class="register-title">Registro de Usuario</h2>
     </ng-template>
-
     <ng-template #subtitle>
       <p class="register-subtitle">Completa los siguientes campos</p>
     </ng-template>
 
-    <!-- Username -->
-    <p-inputgroup class="input-wrapper">
-      <p-inputgroup-addon><i class="pi pi-user"></i></p-inputgroup-addon>
-      <input pInputText [(ngModel)]="username" placeholder="Nombre de usuario" />
-    </p-inputgroup>
+    <!-- Barra de pasos (readonly para evitar clics directos) -->
+    <p-steps
+      [model]="items"
+      [(activeIndex)]="activeIndex"
+      [readonly]="true"
+    ></p-steps>
+    <br />
 
-    <!-- Email -->
-    <p-inputgroup class="input-wrapper">
-      <p-inputgroup-addon><i class="pi pi-envelope"></i></p-inputgroup-addon>
-      <input pInputText [(ngModel)]="email" type="email" placeholder="Correo electrónico" />
-    </p-inputgroup>
+    <div class="mt-4">
+      <!-- Paso 1: Información Personal -->
+      <div *ngIf="activeIndex === 0">
+        <p-inputgroup class="input-wrapper">
+          <p-inputgroup-addon><i class="pi pi-user"></i></p-inputgroup-addon>
+          <!-- input con placeholder vacío para :placeholder-shown -->
+          <input
+            pInputText
+            id="username"
+            [(ngModel)]="username"
+            placeholder=" "
+          />
+          <label for="username" class="floating-label">Nombre de usuario</label>
+        </p-inputgroup>
 
-    <!-- Fecha de nacimiento -->
-    <p-inputgroup class="input-wrapper">
-      <p-inputgroup-addon><i class="pi pi-calendar"></i></p-inputgroup-addon>
-      <input pInputText [(ngModel)]="birthdate" type="date" placeholder="Fecha de nacimiento" />
-    </p-inputgroup>
+        <p-inputgroup class="input-wrapper">
+          <p-inputgroup-addon
+            ><i class="pi pi-envelope"></i
+          ></p-inputgroup-addon>
+          <input
+            pInputText
+            id="email"
+            type="email"
+            [(ngModel)]="email"
+            placeholder=" "
+          />
+          <label for="email" class="floating-label">Correo electrónico</label>
+        </p-inputgroup>
 
-    <!-- Contraseña -->
-    <p-inputgroup class="input-wrapper">
-      <p-inputgroup-addon><i class="pi pi-lock"></i></p-inputgroup-addon>
-      <input pInputText [(ngModel)]="password" type="password" placeholder="Contraseña" />
-    </p-inputgroup>
+        <p-inputgroup class="input-wrapper">
+          <p-inputgroup-addon
+            ><i class="pi pi-calendar"></i
+          ></p-inputgroup-addon>
+          <!-- Si quieres usar PrimeNG Calendar, reemplaza por <p-calendar> -->
+          <input
+            pInputText
+            id="birthdate"
+            type="date"
+            [(ngModel)]="birthdate"
+            placeholder=" "
+          />
+          <label for="birthdate" class="floating-label"
+            >Fecha de nacimiento</label
+          >
+        </p-inputgroup>
+      </div>
 
-    <!-- Confirmar contraseña -->
-    <p-inputgroup class="input-wrapper">
-      <p-inputgroup-addon><i class="pi pi-lock"></i></p-inputgroup-addon>
-      <input pInputText [(ngModel)]="confirmPassword" type="password" placeholder="Confirmar contraseña" />
-    </p-inputgroup>
+      <!-- Paso 2: Seguridad -->
+      <div *ngIf="activeIndex === 1">
+        <p-inputgroup class="input-wrapper">
+          <p-inputgroup-addon><i class="pi pi-lock"></i></p-inputgroup-addon>
+          <input
+            pInputText
+            id="password"
+            type="password"
+            [(ngModel)]="password"
+            placeholder=" "
+          />
+          <label for="password" class="floating-label">Contraseña</label>
+        </p-inputgroup>
 
-    <!-- Pregunta secreta -->
-    <p-inputgroup class="input-wrapper">
-      <p-inputgroup-addon><i class="pi pi-question-circle"></i></p-inputgroup-addon>
-      <input pInputText [(ngModel)]="secret_question" placeholder="Pregunta secreta" />
-    </p-inputgroup>
+        <p-inputgroup class="input-wrapper">
+          <p-inputgroup-addon><i class="pi pi-lock"></i></p-inputgroup-addon>
+          <input
+            pInputText
+            id="confirmPassword"
+            type="password"
+            [(ngModel)]="confirmPassword"
+            placeholder=" "
+          />
+          <label for="confirmPassword" class="floating-label"
+            >Confirmar contraseña</label
+          >
+        </p-inputgroup>
 
-    <!-- Respuesta secreta -->
-    <p-inputgroup class="input-wrapper">
-      <p-inputgroup-addon><i class="pi pi-key"></i></p-inputgroup-addon>
-      <input pInputText [(ngModel)]="secret_answer" placeholder="Respuesta secreta" />
-    </p-inputgroup>
+        <p-inputgroup class="input-wrapper">
+          <p-inputgroup-addon
+            ><i class="pi pi-question-circle"></i
+          ></p-inputgroup-addon>
 
-    <!-- Error -->
+          <p-dropdown
+            [options]="secretQuestions"
+            [(ngModel)]="secret_question"
+            optionLabel="label"
+            placeholder="Pregunta secreta"
+            inputId="secretQuestion"
+          >
+          </p-dropdown>
+
+          <label for="secretQuestion" class="floating-label"
+            ></label
+          >
+        </p-inputgroup>
+
+        <p-inputgroup class="input-wrapper">
+          <p-inputgroup-addon><i class="pi pi-key"></i></p-inputgroup-addon>
+          <input
+            pInputText
+            id="secretAnswer"
+            [(ngModel)]="secret_answer"
+            placeholder=" "
+          />
+          <label for="secretAnswer" class="floating-label"
+            >Respuesta secreta</label
+          >
+        </p-inputgroup>
+      </div>
+
+      <!-- Paso 3: Verificación 2FA -->
+      <div *ngIf="activeIndex === 2">
+        <div *ngIf="showQr" class="text-center mt-4">
+          <h4 class="mb-2">Escanea este código con Google Authenticator:</h4>
+          <img [src]="qrCodeUrl" alt="Código QR" width="200" class="mb-2" />
+          <p>Después de escanearlo, puedes iniciar sesión con tu OTP.</p>
+        </div>
+        <div *ngIf="!showQr" class="text-center mt-4">
+          <p>
+            Puedes habilitar la autenticación de dos factores (2FA) en la
+            configuración de tu perfil más tarde.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje de error -->
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
     </div>
-      <!-- QR si aplica -->
-    <div *ngIf="showQr" class="text-center mt-4">
-      <h4 class="mb-2">Escanea este código con Google Authenticator:</h4>
-      <img [src]="qrCodeUrl" alt="Código QR" width="200" class="mb-2" />
-      <p>Después de escanearlo, puedes iniciar sesión con tu OTP.</p>
+
+    <!-- Botones de navegación -->
+    <div class="button-group mt-3">
+      <!-- Oculto en primer paso -->
+      <button
+        pButton
+        label="Anterior"
+        class="p-button-secondary"
+        (click)="prevStep()"
+        *ngIf="activeIndex > 0"
+      ></button>
+
+      <button
+        pButton
+        label="Siguiente"
+        (click)="nextStep()"
+        *ngIf="activeIndex < 2"
+      ></button>
+
+      <button
+        pButton
+        label="Registrar"
+        (click)="onRegister()"
+        *ngIf="activeIndex === 2"
+      ></button>
     </div>
 
-    <!-- Error -->
-    <div *ngIf="errorMessage" class="text-center text-red-500 mt-3">
-      {{ errorMessage }}
-    </div>
-    <ng-template #footer>
-      <div class="button-group">
-        <button pButton label="Registrar" (click)="onRegister()" class="btn-register w-full"></button>
-        <p class="login-link">¿Ya tienes cuenta?
-          <a [routerLink]="['/auth/login']">Inicia sesión aquí</a>
-        </p>
-      </div>
-    </ng-template>
+    <!-- Enlace a login -->
+    <p class="login-link mt-2">
+      ¿Ya tienes cuenta?
+      <a [routerLink]="['/auth/login']">Inicia sesión aquí</a>
+    </p>
   </p-card>
 </div>

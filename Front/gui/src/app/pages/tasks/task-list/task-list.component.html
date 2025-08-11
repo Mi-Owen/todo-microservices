@@ -1,17 +1,156 @@
-<p-splitter class="kanban-splitter" layout="horizontal">
-  <ng-template #panel>
-    <p-panel header="Tareas por Estado" styleClass="custom-panel">
-      <div class="kanban-board">
-        <div class="kanban-column" *ngFor="let col of kanbanBoard">
-          <div class="column-header">{{ col.header }}</div>
-          <div class="task-card" *ngFor="let task of col.tasks" [ngClass]="getTaskColor(task.color)">
-            <strong>#{{ task.id }} - {{ task.name }}</strong><br />
-            <span><strong>Creada:</strong> {{ task.create_at | date: 'yyyy-MM-dd HH:mm' }}</span><br />
-            <span><strong>Límite:</strong> {{ task.deadline | date: 'yyyy-MM-dd HH:mm' }}</span><br />
-            <span><strong>Descripción:</strong> {{ task.description }}</span>
-          </div>
+<app-header></app-header>
+
+<div class="kanban-board" style="display: flex; gap: 1rem; padding: 2rem">
+  <div
+    *ngFor="let column of kanbanBoard"
+    cdkDropList
+    [id]="column.header"
+    [cdkDropListData]="column.tasks"
+    [cdkDropListConnectedTo]="connectedDropListsIds"
+    (cdkDropListDropped)="drop($event, column.header)"
+    class="kanban-column"
+    style="
+      flex: 1;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 1rem;
+      min-height: 300px;
+    "
+  >
+    <h3>{{ column.header }}</h3>
+
+    <div
+      *ngFor="let task of column.tasks"
+      cdkDrag
+      [ngClass]="getTaskColor(task.color)"
+      style="
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border-radius: 3px;
+        background-color: #f4f4f4;
+        cursor: move;
+        display: flex;
+        align-items: center;
+        position: relative;
+      "
+      (mouseenter)="hoveredTaskId = task.id"
+      (mouseleave)="hoveredTaskId = null"
+    >
+      <div
+        style="flex-grow: 1; cursor: pointer; padding-right: 50px"
+        (click)="startEditTask(task)"
+      >
+        <div *ngIf="editedTaskId !== task.id">
+          <strong>{{ task.name }}</strong><br />
+          <small>{{ task.description }}</small><br />
+          <small>Deadline: {{ task.deadline | date : 'short' }}</small>
+        </div>
+
+        <div *ngIf="editedTaskId === task.id">
+          <input
+            type="text"
+            [(ngModel)]="editCache.name"
+            placeholder="Nombre"
+          /><br />
+          <textarea
+            rows="2"
+            [(ngModel)]="editCache.description"
+            placeholder="Descripción"
+          ></textarea
+          ><br />
+          <input type="datetime-local" [(ngModel)]="editCache.deadline" /><br />
+          <button
+            pButton
+            type="button"
+            icon="pi pi-check"
+            class="p-button-success p-mr-2"
+            (click)="saveTaskEdit(task)"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-times"
+            class="p-button-danger"
+            (click)="cancelTaskEdit()"
+          ></button>
         </div>
       </div>
-    </p-panel>
-  </ng-template>
-</p-splitter>
+
+      <button
+        *ngIf="hoveredTaskId === task.id && editedTaskId !== task.id"
+        pButton
+        type="button"
+        icon="pi pi-trash"
+        class="p-button-danger"
+        style="
+          position: absolute;
+          right: 0;
+          top: 0;
+          height: 100%;
+          width: 50px;
+          border-radius: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+        "
+        (click)="deleteTask(task)"
+      ></button>
+    </div>
+  </div>
+</div>
+
+<!-- Botón flotante para abrir formulario nueva tarea -->
+<button
+  pButton
+  icon="pi pi-plus"
+  class="p-button-rounded p-button-success"
+  style="position: fixed; bottom: 2rem; right: 2rem; z-index: 1000;"
+  (click)="openNewTaskSidebar()"
+  aria-label="Nueva tarea"
+></button>
+
+<!-- Sidebar con formulario -->
+<p-sidebar
+  [(visible)]="showNewTaskSidebar"
+  position="right"
+  [baseZIndex]="10000"
+  [modal]="true"
+  [closeOnEscape]="true"
+  [showCloseIcon]="true"
+  [style]="{ width: '350px' }"
+>
+
+  <h3>Crear nueva tarea</h3>
+
+  <input
+    type="text"
+    [(ngModel)]="newTask.name"
+    placeholder="Nombre"
+    style="width: 100%; margin-bottom: 0.5rem"
+    (click)="$event.stopPropagation()"
+  />
+  <textarea
+    [(ngModel)]="newTask.description"
+    placeholder="Descripción"
+    rows="3"
+    style="width: 100%; margin-bottom: 0.5rem"
+    (click)="$event.stopPropagation()"
+  ></textarea>
+  <input
+    type="datetime-local"
+    [(ngModel)]="newTask.deadline"
+    style="width: 100%; margin-bottom: 1rem"
+    (click)="$event.stopPropagation()"
+  />
+
+  <button
+    pButton
+    type="button"
+    label="Crear tarea"
+    class="p-button-success"
+    (click)="createTask()"
+    style="width: 100%"
+
+  ></button>
+</p-sidebar>

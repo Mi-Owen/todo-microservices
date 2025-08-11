@@ -1,1 +1,29 @@
-<p>header works!</p>
+<div class="navbar">
+  <span class="app-title">Todo-Microservices</span>
+
+  <button
+    pButton
+    type="button"
+    label="Mostrar Logs"
+    (click)="showLogs()"
+  ></button>
+
+  <p-dialog
+    header="Dashboard de Logs"
+    [(visible)]="displayLogsModal"
+    modal="true"
+    [style]="{ width: '80vw' }"
+    [baseZIndex]="10000"
+    [closable]="true"
+  >
+    <app-logs-dashboard></app-logs-dashboard>
+  </p-dialog>
+
+  <i
+    class="pi pi-sign-out logout-icon"
+    pTooltip="Cerrar sesión"
+    tooltipPosition="bottom"
+    (click)="logout()"
+  >
+  </i>
+</div>

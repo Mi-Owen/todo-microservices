@@ -7,7 +7,7 @@ import { HttpInterceptorFn } from "@angular/common/http";
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   
   // Obtenemos el token de autenticación almacenado en el localStorage del navegador.
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem('token');
 
   // Si el token existe, modificamos la solicitud original.
   if (token && !req.url.includes('/auth/verify-otp')) {

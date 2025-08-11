@@ -1,12 +1,15 @@
 <div class="login-container">
   <p-card class="login-card">
-
     <!-- Encabezado dinámico -->
     <ng-template #header>
       <div class="login-header">
         <h2 class="login-title">Login</h2>
         <p class="login-subtitle">
-          {{ step === 'credentials' ? 'Enter your credentials' : 'Enter the verification code' }}
+          {{
+            step === "credentials"
+              ? "Enter your credentials"
+              : "Enter the verification code"
+          }}
         </p>
       </div>
     </ng-template>
@@ -41,6 +44,10 @@
           />
         </p-inputgroup>
       </div>
+      <p class="login-link mt-2">
+      ¿Aun no tienes cuenta?
+      <a [routerLink]="['/auth/register']">Registrate aquí</a>
+    </p>
     </div>
 
     <!-- Paso 2: Código OTP -->
@@ -87,6 +94,5 @@
         ></p-button>
       </div>
     </ng-template>
-
   </p-card>
 </div>

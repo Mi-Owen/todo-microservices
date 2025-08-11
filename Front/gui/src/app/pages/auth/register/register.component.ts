@@ -1,21 +1,23 @@
-// Importa módulos comunes de Angular
+// register.component.ts
 import { CommonModule } from '@angular/common';
-import { Component, Renderer2 } from '@angular/core';
+import { Component, Renderer2, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 
-// Importa módulos de PrimeNG para UI
+// PrimeNG
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DropdownModule } from 'primeng/dropdown';
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { InputTextModule } from 'primeng/inputtext';
 import { CalendarModule } from 'primeng/calendar';
+import { StepsModule } from 'primeng/steps';
+import { MenuItem } from 'primeng/api';
 
-// Importa el servicio de autenticación
+// Servicio de autenticación (ruta según tu proyecto)
 import { AuthService } from '../../../core/auth/auth.service';
 
-// Define el componente Register
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -28,21 +30,36 @@ import { AuthService } from '../../../core/auth/auth.service';
     InputGroupAddonModule,
     ButtonModule,
     CardModule,
+    DropdownModule,
     CalendarModule,
+    StepsModule,
   ],
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.css'],
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
+  // PrimeNG steps
+  items: MenuItem[] = [];
+  activeIndex: number = 0;
+
+  public secretQuestions = [
+    { label: '¿Cuál es el nombre de tu primera mascota?', value: 'mascota' },
+    { label: '¿Cuál es el nombre de tu escuela primaria?', value: 'escuela' },
+    { label: '¿Cuál es tu ciudad natal?', value: 'ciudad' },
+    { label: '¿Cuál es tu comida favorita?', value: 'comida' },
+  ];
+
+  // Form fields
   public username: string = '';
   public password: string = '';
   public confirmPassword: string = '';
   public email: string = '';
-  public birthdate: Date | null = null; // Tipado más preciso
+  public birthdate: Date | null = null;
   public secret_question: string = '';
   public secret_answer: string = '';
-  public errorMessage: string = '';
 
+  // Misc
+  public errorMessage: string = '';
   public qrCodeUrl: string = '';
   public showQr: boolean = false;
   public darkMode: boolean = false;
@@ -56,37 +73,45 @@ export class RegisterComponent {
     this.darkMode = savedMode ? JSON.parse(savedMode) : false;
   }
 
+  ngOnInit(): void {
+    this.items = [
+      { label: 'Información Personal' },
+      { label: 'Seguridad' },
+      { label: 'Verificación 2FA' },
+    ];
+  }
+
   toggleDarkMode(): void {
     this.darkMode = !this.darkMode;
     localStorage.setItem('darkMode', String(this.darkMode));
-    console.debug('Dark mode:', this.darkMode); // Reemplazado por console.debug
+    console.debug('Dark mode:', this.darkMode);
+  }
+
+  prevStep(): void {
+    if (this.activeIndex > 0) {
+      this.errorMessage = '';
+      this.activeIndex--;
+    }
+  }
+
+  nextStep(): void {
+    // valida el paso actual antes de avanzar
+    if (this.validateStep(this.activeIndex)) {
+      this.errorMessage = '';
+      this.activeIndex++;
+    }
   }
 
   onRegister(): void {
-    if (this.password !== this.confirmPassword) {
-      this.errorMessage = 'Las contraseñas no coinciden.';
-      return;
-    }
+    if (!this.validateStep(this.activeIndex)) return;
 
-    // Validar campos obligatorios
-    if (
-      !this.username ||
-      !this.password ||
-      !this.email ||
-      !this.secret_question ||
-      !this.secret_answer ||
-      !this.birthdate
-    ) {
-      this.errorMessage = 'Todos los campos son obligatorios.';
-      return;
-    }
-
-    let formattedBirthdate: string = '';
-
+    let formattedBirthdate = '';
     if (this.birthdate instanceof Date) {
       formattedBirthdate = this.birthdate.toISOString().split('T')[0];
-    } else {
-      formattedBirthdate = new Date(this.birthdate).toISOString().split('T')[0];
+    } else if (this.birthdate) {
+      formattedBirthdate = new Date(this.birthdate as any)
+        .toISOString()
+        .split('T')[0];
     }
 
     const data = {
@@ -100,7 +125,7 @@ export class RegisterComponent {
 
     this.authService.register(data).subscribe({
       next: (res) => {
-        console.debug('Usuario registrado:', res); // Reemplazado por console.debug
+        console.debug('Usuario registrado:', res);
         if (res.qrCodeUrl) {
           this.qrCodeUrl = res.qrCodeUrl;
           this.showQr = true;
@@ -109,9 +134,41 @@ export class RegisterComponent {
         }
       },
       error: (err) => {
-        console.error('Error en el registro:', err); // Añadido console.error para trazar errores
+        console.error('Error en el registro:', err);
         this.errorMessage = err.error?.error || 'Error al registrar usuario.';
       },
     });
+  }
+
+  private validateStep(step: number): boolean {
+    switch (step) {
+      case 0:
+        if (!this.username || !this.email || !this.birthdate) {
+          this.errorMessage =
+            'Completa todos los campos de información personal.';
+          return false;
+        }
+        return true;
+      case 1:
+        if (
+          !this.password ||
+          !this.confirmPassword ||
+          !this.secret_question ||
+          !this.secret_answer
+        ) {
+          this.errorMessage = 'Completa todos los campos de seguridad.';
+          return false;
+        }
+        if (this.password !== this.confirmPassword) {
+          this.errorMessage = 'Las contraseñas no coinciden.';
+          return false;
+        }
+        return true;
+      case 2:
+        // Paso 3 es opcional (2FA)
+        return true;
+      default:
+        return true;
+    }
   }
 }
