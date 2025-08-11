@@ -1,3 +1,4 @@
+# auth_service.py
 from flask import Flask, request, jsonify
 import pyotp
 import qrcode
@@ -6,138 +7,143 @@ import base64
 import os
 import jwt
 import datetime
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import IntegrityError
 
+# Configuración Flask
 app = Flask(__name__)
+# Obtener la clave secreta de las variables de entorno.
+# Es crítico que esta variable esté configurada en producción.
+SECRET_KEY = os.environ.get('SECRET_KEY')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# Clave secreta para JWT, obligatoriamente usar variable de entorno en Render
-SECRET_KEY = os.getenv("SECRET_KEY")
+# Si la clave secreta o la URL de la base de datos no están configuradas,
+# es mejor detener la aplicación para evitar fallos de seguridad o de conexión.
 if not SECRET_KEY:
-    raise RuntimeError("Falta configurar SECRET_KEY en variables de entorno")
-
-# URL de la base de datos desde variable de entorno
-DATABASE_URL = os.getenv("DATABASE_URL")
+    raise RuntimeError("FATAL: La variable de entorno 'SECRET_KEY' no está configurada. Necesaria para JWT.")
 if not DATABASE_URL:
-    raise RuntimeError("Falta configurar DATABASE_URL en variables de entorno")
+    raise RuntimeError("FATAL: La variable de entorno 'DATABASE_URL' no está configurada.")
 
-engine = create_engine(DATABASE_URL)
 
-def init_db():
-    with engine.connect() as conn:
-        with conn.begin():
-            # Crear tabla con todos los constraints necesarios
-            # Si la tabla ya existe, esto no hará nada
-            conn.execute(text('''
-                CREATE TABLE IF NOT EXISTS users (
-                    id SERIAL PRIMARY KEY,
-                    username TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL,
-                    email TEXT UNIQUE,
-                    status TEXT DEFAULT 'active',
-                    totp_secret TEXT
-                )
-            '''))
-            print("Tabla users inicializada correctamente")
+# Conexión a PostgreSQL
+def get_db_connection():
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
+# Registro
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
+
     if not data or 'username' not in data or 'password' not in data or 'email' not in data:
         return jsonify({'error': 'Faltan campos'}), 400
 
-    username = data['username'].strip()
-    email = data['email'].strip() if data['email'] else None
+    # Mejora: Añadir validación de entrada (por ejemplo, longitud, formato de email) aquí
     hashed_password = generate_password_hash(data['password'])
     totp_secret = pyotp.random_base32()
+    conn = None
 
     try:
-        with engine.connect() as conn:
-            with conn.begin():
-                conn.execute(text("""
-                    INSERT INTO users (username, password, email, totp_secret)
-                    VALUES (:u, :p, :e, :t)
-                """), {
-                    "u": username, 
-                    "p": hashed_password, 
-                    "e": email, 
-                    "t": totp_secret
-                })
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO users (username, password, email, totp_secret) VALUES (%s, %s, %s, %s) RETURNING id",
+            (data['username'], hashed_password, data['email'], totp_secret)
+        )
+        user_id = cur.fetchone()['id']
+        conn.commit()
+        cur.close()
 
-                otp_uri = pyotp.totp.TOTP(totp_secret).provisioning_uri(
-                    name=username, issuer_name="SeguridadApp"
-                )
-                qr = qrcode.make(otp_uri)
-                buf = io.BytesIO()
-                qr.save(buf, format='PNG')
-                qr_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-                qr_url = f"data:image/png;base64,{qr_b64}"
+        otp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
+            name=data['username'], issuer_name="SeguridadApp"
+        )
+        qr = qrcode.make(otp_uri)
+        buf = io.BytesIO()
+        qr.save(buf, format='PNG')
+        qr_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        qr_url = f"data:image/png;base64,{qr_b64}"
 
-        return jsonify({
-            'message': 'Usuario registrado correctamente', 
-            'qrCodeUrl': qr_url
-        }), 201
-        
-    except IntegrityError as e:
-        # Similar al sqlite3.IntegrityError de tu código original
-        print(f"IntegrityError: {e}")  # Debug
-        return jsonify({'error': 'Nombre de usuario ya existe'}), 409
-    except Exception as e:
-        print(f"Error inesperado: {e}")  # Debug
+        return jsonify({'message': 'Usuario registrado correctamente', 'user_id': user_id, 'qrCodeUrl': qr_url}), 201
+
+    except psycopg2.errors.UniqueViolation:
+        return jsonify({'error': 'Nombre de usuario o email ya existe'}), 409
+    except psycopg2.Error as e:
+        print(f"Database error during registration: {e}")
         return jsonify({'error': 'Error interno del servidor'}), 500
+    finally:
+        if conn:
+            conn.close()
 
+# Login
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
+
     if not data or 'username' not in data or 'password' not in data:
         return jsonify({'error': 'Faltan campos'}), 400
 
-    with engine.connect() as conn:
-        result = conn.execute(text("SELECT * FROM users WHERE username = :u"), {"u": data['username']})
-        user = result.fetchone()
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE username = %s", (data['username'],))
+        user = cur.fetchone()
+        cur.close()
 
-    if user and check_password_hash(user.password, data['password']):
-        temp_token = jwt.encode({
-            'id': user.id,
-            'username': user.username,
-            'mfa': True,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
-        }, SECRET_KEY, algorithm='HS256')
+        if user and check_password_hash(user['password'], data['password']):
+            temp_token = jwt.encode({
+                'id': user['id'],
+                'username': user['username'],
+                'mfa': True,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+            }, SECRET_KEY, algorithm='HS256')
 
-        return jsonify({'tempToken': temp_token}), 200
+            return jsonify({'tempToken': temp_token}), 200
 
-    return jsonify({'error': 'Credenciales incorrectas'}), 401
+        return jsonify({'error': 'Credenciales incorrectas'}), 401
+    except psycopg2.Error as e:
+        print(f"Database error during login: {e}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+    finally:
+        if conn:
+            conn.close()
 
+
+# Verificar OTP
 @app.route('/verify-otp', methods=['POST'])
 def verify_otp():
     auth_header = request.headers.get('Authorization', '')
-    if not auth_header.startswith('Bearer '):
+    if not auth_header.startswith('Bearer'):
         return jsonify({'error': 'Falta token en header'}), 401
 
     temp_token = auth_header.split(' ')[1]
     data = request.get_json()
+
     if not data or 'otp' not in data:
         return jsonify({'error': 'Falta OTP'}), 400
 
+    conn = None
     try:
         payload = jwt.decode(temp_token, SECRET_KEY, algorithms=['HS256'])
         if not payload.get('mfa'):
             return jsonify({'error': 'Token invalido por MFA'}), 401
 
         user_id = payload['id']
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT * FROM users WHERE id = :id"), {"id": user_id})
-            user = result.fetchone()
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+        cur.close()
 
         if not user:
             return jsonify({'error': 'Usuario no encontrado'}), 404
 
-        totp = pyotp.TOTP(user.totp_secret)
+        totp = pyotp.TOTP(user['totp_secret'])
         if totp.verify(data['otp']):
             final_token = jwt.encode({
-                'id': user.id,
-                'username': user.username,
+                'id': user['id'],
+                'username': user['username'],
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
             }, SECRET_KEY, algorithm='HS256')
 
@@ -149,8 +155,13 @@ def verify_otp():
         return jsonify({'error': 'Token expirado'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'error': 'Token invalido'}), 401
+    except psycopg2.Error as e:
+        print(f"Database error during OTP verification: {e}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+    finally:
+        if conn:
+            conn.close()
 
+# Main para desarrollo local, no se usará en Render
 if __name__ == '__main__':
-    init_db()
-    port = int(os.environ.get('PORT', 5001))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=5001, debug=True)
