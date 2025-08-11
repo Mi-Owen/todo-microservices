@@ -168,7 +168,7 @@ def proxy_request(service_url, path):
         content_type = resp.headers.get('content-type', 'application/json')
 
         # Prepare response headers, excluding problematic ones
-        excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+        excluded_headers = ['content-length', 'transfer-encoding', 'connection']  # Quita 'content-encoding'
         response_headers = {name: value for name, value in resp.headers.items() if name.lower() not in excluded_headers}
 
         # Ensure content-type is included
