@@ -26,16 +26,35 @@ engine = create_engine(DATABASE_URL)
 
 def init_db():
     with engine.connect() as conn:
-        conn.execute(text('''
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                email TEXT,
-                status TEXT DEFAULT 'active',
-                totp_secret TEXT
-            )
-        '''))
+        with conn.begin():
+            # Crear tabla con todos los constraints necesarios
+            conn.execute(text('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    email TEXT UNIQUE,
+                    status TEXT DEFAULT 'active',
+                    totp_secret TEXT
+                )
+            '''))
+            
+            # Agregar constraints si no existen (para tablas existentes)
+            try:
+                conn.execute(text('''
+                    ALTER TABLE users 
+                    ADD CONSTRAINT unique_username UNIQUE (username)
+                '''))
+            except IntegrityError:
+                pass  # Constraint ya existe
+            
+            try:
+                conn.execute(text('''
+                    ALTER TABLE users 
+                    ADD CONSTRAINT unique_email UNIQUE (email)
+                '''))
+            except IntegrityError:
+                pass  # Constraint ya existe
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -77,13 +96,17 @@ def register():
         
     except IntegrityError as e:
         error_str = str(e).lower()
+        print(f"IntegrityError details: {e}")  # Para debugging
         
-        if "unique_username" in error_str:
+        if "username" in error_str or "unique_username" in error_str:
             return jsonify({'error': 'El nombre de usuario ya existe'}), 409
-        elif "unique_email" in error_str:
+        elif "email" in error_str or "unique_email" in error_str:
             return jsonify({'error': 'El email ya está registrado'}), 409
         else:
             return jsonify({'error': 'El usuario ya existe'}), 409
+    except Exception as e:
+        print(f"Error inesperado: {e}")  # Para debugging
+        return jsonify({'error': 'Error interno del servidor'}), 500
 
 @app.route('/login', methods=['POST'])
 def login():
