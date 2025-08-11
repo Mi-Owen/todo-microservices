@@ -150,25 +150,40 @@ def proxy_request(service_url, path):
     method = request.method
     url = f'{service_url}/{path}'
 
-    # Copiar headers excepto Host
+    # Copy headers except 'host'
     headers = {key: value for key, value in request.headers if key.lower() != 'host'}
 
-    # Obtener el cuerpo (data) sin procesar (bytes)
+    # Get raw data and query params
     data = request.get_data()
-
-    # Obtener query params
     params = request.args
 
-    # Enviar la petición al microservicio correspondiente
-    resp = requests.request(method=method, url=url, headers=headers, data=data, params=params)
+    try:
+        # Send request to the microservice
+        resp = requests.request(method=method, url=url, headers=headers, data=data, params=params, timeout=10)
 
-    # Excluir headers que Flask maneja por su cuenta
-    excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
-    response_headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
+        # Log the microservice response for debugging
+        logging.info(f"Microservice response: status={resp.status_code}, headers={resp.headers}, content={resp.content[:100]}")
 
-    # Devolver la respuesta con el contenido original, status y headers limpios
-    return Response(resp.content, status=resp.status_code, headers=response_headers)
+        # Get content type from the response
+        content_type = resp.headers.get('content-type', 'application/json')
 
+        # Prepare response headers, excluding problematic ones
+        excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+        response_headers = {name: value for name, value in resp.headers.items() if name.lower() not in excluded_headers}
+
+        # Ensure content-type is included
+        response_headers['Content-Type'] = content_type
+
+        # Return the response content as-is
+        return Response(
+            response=resp.content,
+            status=resp.status_code,
+            headers=response_headers
+        )
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error proxying request to {url}: {str(e)}")
+        return jsonify({"error": "Service unavailable"}), 503
 
 @app.route('/auth/login', methods=['POST'])
 @limiter.limit("5 per minute")
