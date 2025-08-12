@@ -34,7 +34,7 @@ with tempfile.NamedTemporaryFile(delete=False) as tf:
 db = firestore.client()
 
 app = Flask(__name__)
-CORS(app, origins=["https://todo-microservices.vercel.app"])  # Ajusta el origen según tu frontend
+CORS(app, origins=["https://todo-tasks-psi.vercel.app"])  # Ajusta el origen según tu frontend
 
 def get_user_from_token(token):
     try:

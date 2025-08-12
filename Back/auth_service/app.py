@@ -15,11 +15,6 @@ app = Flask(__name__)
 SECRET_KEY = os.environ.get('SECRET_KEY')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# --- INICIO DEL CAMBIO ---
-# Agregamos este print para depuración
-print(f"La aplicación está usando esta URL de base de datos: {DATABASE_URL}")
-# --- FIN DEL CAMBIO ---
-
 if not SECRET_KEY:
     raise RuntimeError("FATAL: La variable de entorno 'SECRET_KEY' no está configurada. Necesaria para JWT.")
 if not DATABASE_URL:
